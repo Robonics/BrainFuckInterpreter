@@ -1,7 +1,7 @@
 /*
 	QuickFuck, a lightweight C++ Brainfuck interpreter
 	Currently has Brainfuck::Interpreter and Brainfuck::PerformanceInterpreter
-	By radposeidon
+	By Robonics
 */
 
 #include <iostream>

@@ -2,7 +2,7 @@
 	QuickFuck library, a lightweight C++ Brainfuck interpreter library
 	Currently has Brainfuck::DynamicInterpreter and Brainfuck::PerformanceInterpreter
 	This is the library version, designed to be used in other programs
-	By radposeidon
+	By Robonics
 */
 
 #include <string>
