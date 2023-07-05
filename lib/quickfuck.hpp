@@ -35,6 +35,9 @@ namespace Brainfuck {
 		std::string getOutput() {
 			return output;
 		}
+		void clearOutput() {
+			output = "";
+		}
 		std::string getInput() {
 			return input;
 		}
@@ -56,10 +59,14 @@ namespace Brainfuck {
 		size_t getIndex() {
 			return active_cell;
 		}
+		void setIndex(size_t i) {
+			active_cell = i;
+		}
 		virtual std::vector<char> getTape() {return {};}
 		virtual char getValue(size_t) {return 0;}
 		virtual char getValue() {return 0;}
 		virtual void setValue(size_t,char) {}
+		virtual void setValue(char) {}
 		virtual size_t getSize() {return 0;}
 	};
 
@@ -112,6 +119,8 @@ namespace Brainfuck {
 		virtual void reset() {
 			position = 0;
 			cells = { 0 };
+			output = "";
+			input = "";
 		}
 
 		virtual void step() {
@@ -170,6 +179,9 @@ namespace Brainfuck {
 		}
 		virtual void setValue(size_t i, char v) {
 			cells[i] = v;
+		}
+		virtual void setValue(char v) {
+			cells[active_cell] = v;
 		}
 		virtual size_t getSize() {
 			return cells.size();
@@ -230,6 +242,9 @@ namespace Brainfuck {
 			for(size_t i = 0; i < size; i++) {
 				bytes[i] = 0;
 			}
+
+			output = "";
+			input = "";
 		}
 
 		virtual void step() {
@@ -288,6 +303,9 @@ namespace Brainfuck {
 		}
 		virtual void setValue(size_t i, char v) {
 			bytes[i] = v;
+		}
+		virtual void setValue(char v) {
+			bytes[active_cell] = v;
 		}
 		virtual size_t getSize() {
 			return size;
