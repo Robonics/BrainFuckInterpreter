@@ -15,26 +15,63 @@
 namespace Brainfuck {
 	/// Base/Abstract class
 	class Interpreter {
+	protected:
+		std::string output;
+		std::string input;
+
+		std::string code;
+		size_t position;
+		size_t active_cell = 0;
+		std::stack<size_t> loops;
 	public:
-		virtual std::string interpret(std::string) {return "";}
-		virtual std::vector<int> getTape() {return {};}
-		virtual int getValue(size_t) {return 0;}
+
+		Interpreter() {}
+		Interpreter( std::string c ) : code(c) {}
+
+		virtual std::string interpret() {return output;}
+		virtual std::string interpret(std::string) {return output;}
+		virtual void reset() {}
+		virtual void step() {}
+		std::string getOutput() {
+			return output;
+		}
+		std::string getInput() {
+			return input;
+		}
+		void setInput( std::string s ) {
+			input = s;
+		}
+		void addInput( std::string s ) {
+			input += s;
+		}
+		std::string& getCode() {
+			return code;
+		}
+		size_t getPosition() {
+			return position;
+		}
+		void setPosition(size_t i) {
+			position = i;
+		}
+		size_t getIndex() {
+			return active_cell;
+		}
+		virtual std::vector<char> getTape() {return {};}
+		virtual char getValue(size_t) {return 0;}
+		virtual char getValue() {return 0;}
+		virtual void setValue(size_t,char) {}
 		virtual size_t getSize() {return 0;}
 	};
 
 	/// The most basic interpreter. Rather memory hefty, does not support negative cell coords
 	/// This interpreter is dynamically sized, and will grow as more cells are used
 	class DynamicInterpreter : public Interpreter {
-		std::vector<int> cells;
-		std::string code;
-		std::stack<int> loops;
-		size_t position;
-		size_t active_cell = 0;
+		std::vector<char> cells;
 
 	public:
 		DynamicInterpreter() {}
 		/// @param s The source code
-		DynamicInterpreter( std::string s ) : code(s) {}
+		DynamicInterpreter( std::string s ) : Interpreter(s) {}
 		/// @param f The file to read from
 		DynamicInterpreter( std::ifstream &f ) {
 			std::stringstream buff;
@@ -56,63 +93,83 @@ namespace Brainfuck {
 		}
 
 		/// Interpret the code from the beginning
-		virtual std::string interpret( std::string input="" ) {
-			position = 0;
-			// Initilize the tape
-			cells = { 0 };
-			std::string output = "";
+		virtual std::string interpret() {
+			this->reset();
 			while( position < code.length() ) {
-				switch( code[position] ) {
-					case '+':
-						cells[active_cell]++;
-						break;
-					case '-':
-						cells[active_cell]--;
-						break;
-					case '<':
-						if(active_cell > 0) // No negative
-							active_cell--;
-						break;
-					case '>':
-						if( active_cell == cells.size() -1 )
-							cells.emplace_back(0);
-						active_cell++;
-						break;
-					case '[':
-						loops.push(position);
-						break;
-					case ']':
-						if( cells[active_cell] == 0 ) {
-							loops.pop();
-						}else {
-							position = loops.top();
-						}
-						break;
-					case '.':
-						output += (char)(cells[active_cell]);
-						break;
-					case ',':
-						if( input.length() == 0 ) {
-							throw std::range_error("End of input");
-						}
-						cells[active_cell] = (int)(input[0]);
-						input.erase(0, 1);
-						break;
-				}
-				position++;
+				this->step();
+			}
+			return output;
+		}
+		virtual std::string interpret( std::string in ) {
+			this->input = in;
+			this->reset();
+			while( position < code.length() ) {
+				this->step();
 			}
 			return output;
 		}
 
+		virtual void reset() {
+			position = 0;
+			cells = { 0 };
+		}
+
+		virtual void step() {
+			switch( code[position] ) {
+				case '+':
+					cells[active_cell]++;
+					break;
+				case '-':
+					cells[active_cell]--;
+					break;
+				case '<':
+					if(active_cell > 0) // No negative
+						active_cell--;
+					break;
+				case '>':
+					if( active_cell == cells.size() -1 )
+						cells.emplace_back(0);
+					active_cell++;
+					break;
+				case '[':
+					loops.push(position);
+					break;
+				case ']':
+					if( cells[active_cell] == 0 ) {
+						loops.pop();
+					}else {
+						position = loops.top();
+					}
+					break;
+				case '.':
+					output += (char)(cells[active_cell]);
+					break;
+				case ',':
+					if( input.length() == 0 ) {
+						throw std::range_error("End of input");
+					}
+					cells[active_cell] = input[0];
+					input.erase(0, 1);
+					break;
+			}
+			position++;
+		}
+
 		/// Print the value of all the cells
-		virtual std::vector<int> getTape() {
+		virtual std::vector<char> getTape() {
 			return cells;
 		}
-		virtual int getValue(size_t i) {
+		virtual char getValue(size_t i) {
 			if(i > cells.size()) {
 				throw std::range_error("Out of bounds");
 			}
 			return cells[i];
+		}
+		virtual char getValue() {
+			return cells[active_cell];
+		}
+		virtual void setValue(size_t i, char v) {
+			cells[i] = v;
 		}
 		virtual size_t getSize() {
 			return cells.size();
@@ -123,15 +180,11 @@ namespace Brainfuck {
 	/// This is not dynamically sized, nor does it support negative cell keys
 	class PerformanceInterpreter : public Interpreter {
 		unsigned char* bytes;
-		size_t position;
-		std::stack<size_t> loops;
-		size_t active_cell;
 		size_t size;
-		std::string code;
 	public:
 		/// @param s The source code to build from
 		/// @param width The width/length of the tape
-		PerformanceInterpreter( std::string s, size_t width ) : code(s), size(width) {
+		PerformanceInterpreter( std::string s, size_t width ) : Interpreter(s), size(width) {
 			bytes = (unsigned char*)malloc(width);
 			// Zero bytes
 			for(size_t i = 0; i < width; i++) {
@@ -150,63 +203,91 @@ namespace Brainfuck {
 		}
 
 		/// Interprets the code form position 0
-		virtual std::string interpret( std::string input="") {
-			position = 0;
-			active_cell = 0;
+		virtual std::string interpret() {
+			this->reset();
 
-			std::string output = "";
 			while( position < code.length() ) {
-				switch(code[position]) {
-					case '+':
-						bytes[active_cell]++;
-						break;
-					case '-':
-						bytes[active_cell]--;
-						break;
-					case '<': // This version has no hand holds
-						active_cell--;
-						break;
-					case '>':
-						active_cell++;
-						break;
-					case '[':
-						loops.push(position);
-						break;
-					case ']':
-						if(bytes[active_cell] == 0) {
-							loops.pop();
-						}else {
-							position = loops.top();
-						}
-						break;
-					case '.':
-						output += (char)(bytes[active_cell]);
-						break;
-					case ',':
-						if(input.length() == 0) {
-							throw std::range_error("Input is empty, nothing more to read");
-						}
-						bytes[active_cell] = input[0];
-						input.erase(0,1);
-				}
-				position++;
+				this->step();
+			}
+			return output;
+		}
+		virtual std::string interpret(std::string in) {
+			input = in;
+			this->reset();
+
+			while( position < code.length() ) {
+				this->step();
 			}
 			return output;
 		}
 
+		virtual void reset() {
+			position = 0;
+			active_cell = 0;
+
+			free(bytes);
+			bytes = (unsigned char*)malloc(size);
+			for(size_t i = 0; i < size; i++) {
+				bytes[i] = 0;
+			}
+		}
+
+		virtual void step() {
+			switch(code[position]) {
+				case '+':
+					bytes[active_cell]++;
+					break;
+				case '-':
+					bytes[active_cell]--;
+					break;
+				case '<': // This version has no hand holds
+					active_cell--;
+					break;
+				case '>':
+					active_cell++;
+					break;
+				case '[':
+					loops.push(position);
+					break;
+				case ']':
+					if(bytes[active_cell] == 0) {
+						loops.pop();
+					}else {
+						position = loops.top();
+					}
+					break;
+				case '.':
+					output += (char)(bytes[active_cell]);
+					break;
+				case ',':
+					if(input.length() == 0) {
+						throw std::range_error("Input is empty, nothing more to read");
+					}
+					bytes[active_cell] = input[0];
+					input.erase(0,1);
+			}
+			position++;
+		}
+
 		// Prints the contents of each cell
-		virtual std::vector<int> getTape() {
-			std::vector<int> v;
+		virtual std::vector<char> getTape() {
+			std::vector<char> v;
 			for(size_t i = 0; i < size; i++) {
 				if(i > size) {
 					throw std::range_error("Out of bounds");
 				}
-				v.emplace_back((int)bytes[i]);
+				v.emplace_back((char)bytes[i]);
 			}
 			return v;
 		}
-		virtual int getValue(size_t i) {
-			return (int)bytes[i];
+		virtual char getValue(size_t i) {
+			return (char)bytes[i];
+		}
+		virtual char getValue() {
+			return (char)bytes[active_cell];
+		}
+		virtual void setValue(size_t i, char v) {
+			bytes[i] = v;
 		}
 		virtual size_t getSize() {
 			return size;
