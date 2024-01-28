@@ -1,5 +1,5 @@
-# QuickFuck
-A simple, lightweight-ish C++ based brainfuck interpreter and library. It is named such because I wrote it in ~1 day. QuickFuck Currently does not support any extensions or negative cell locations.
+# C++ Brainfuck Interpreter, aka QuickFuck
+A simple, lightweight-ish C++ based brainfuck interpreter and library. It is named such because I wrote it in ~1 day and my poor sense of humor thought it was a funny name. QuickFuck Currently does not support any extensions or negative cell locations.
 
 ## Interpreter Usage
 The interpreter, which is built from `qfmain.cpp`, is easy to use:
