@@ -12,7 +12,7 @@ If multiple arguments that can be interpreted as a file or code are provided, th
 
 `quickfuck <first> <second>` will execute second only
 ### Flags
-- `--performance` or `-p`, switches to the "Performance" or fixed-size interpreter, in place of the dynamically sized one. The size defaults to `256`, but it can be changed by preceding the flag with a number: `-p 32`
+- `--performance` or `-p`, switches to the "Performance" or fixed-size interpreter, in place of the dynamically sized one. The size defaults to `256`, but it can be changed by following the flag with a number: `-p 32`
 - `--verbose` or `-v`, Simply prints the values of the cells after execution. Not really much point when `#` exists.
 - `--eval` or `-e`, switches from file mode to direct evaluation.
 - `--help` or `-h`, it's help
